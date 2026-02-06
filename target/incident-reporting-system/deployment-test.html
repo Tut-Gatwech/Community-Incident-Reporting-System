@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Incident System - Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .success { color: green; }
+        .error { color: red; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Community Incident Reporting System</h1>
+    <h2>Deployment Test Page</h2>
+    
+    <div class="test">
+        <h3>Test 1: JSP Pages</h3>
+        <ul>
+            <li><a href="login.jsp">Login Page</a></li>
+            <li><a href="index.jsp">Home Page</a></li>
+        </ul>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Servlets</h3>
+        <ul>
+            <li><a href="auth/test">Auth Servlet Test</a> (should give 404)</li>
+            <li><a href="incident/test">Incident Servlet Test</a> (should give 404)</li>
+            <li><a href="dashboard/test">Dashboard Servlet Test</a> (should give 404)</li>
+        </ul>
+        <p><small>Note: 404 errors are OK - they mean servlets are mapped but paths don't exist</small></p>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Login Form</h3>
+        <form action="auth/login" method="POST">
+            <label>Username: <input type="text" name="username" value="admin"></label><br>
+            <label>Password: <input type="password" name="password" value="admin123"></label><br>
+            <button type="submit">Test Login</button>
+        </form>
+    </div>
+    
+    <div class="test">
+        <h3>Deployment Info</h3>
+        <p>Application should now be fully deployed and working!</p>
+        <p>If login fails, check browser developer console (F12) for errors.</p>
+    </div>
+</body>
+</html>

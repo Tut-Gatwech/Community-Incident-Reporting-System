@@ -1,0 +1,91 @@
+package com.incident.controller;
+
+import com.incident.model.User;
+import com.incident.service.IncidentService;
+import com.incident.service.NotificationService;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+@WebServlet("/dashboard/*")
+public class DashboardController extends HttpServlet {
+    private IncidentService incidentService;
+    private NotificationService notificationService;
+    
+    @Override
+    public void init() {
+        incidentService = new IncidentService();
+        notificationService = new NotificationService();
+    }
+    
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login.jsp");
+            return;
+        }
+        
+        User user = (User) session.getAttribute("user");
+        String action = request.getPathInfo();
+        
+        if (action == null) {
+            redirectToRoleDashboard(user, request, response);
+            return;
+        }
+        
+        switch (action) {
+            case "/stats":
+                handleStats(request, response, user);
+                break;
+            default:
+                redirectToRoleDashboard(user, request, response);
+        }
+    }
+    
+    private void redirectToRoleDashboard(User user, HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        
+        switch (user.getRole()) {
+            case "ADMIN":
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                break;
+            case "OFFICER":
+                response.sendRedirect(request.getContextPath() + "/officer/dashboard");
+                break;
+            case "CITIZEN":
+                response.sendRedirect(request.getContextPath() + "/citizen/dashboard");
+                break;
+            default:
+                response.sendRedirect(request.getContextPath() + "/login.jsp");
+        }
+    }
+    
+    private void handleStats(HttpServletRequest request, HttpServletResponse response, User user)
+            throws ServletException, IOException {
+        
+        // Get dashboard statistics
+        int totalIncidents = incidentService.getTotalIncidents();
+        int pendingIncidents = incidentService.getIncidentsCountByStatus("PENDING");
+        int inProgressIncidents = incidentService.getIncidentsCountByStatus("IN_PROGRESS");
+        int resolvedIncidents = incidentService.getIncidentsCountByStatus("RESOLVED");
+        int unreadNotifications = notificationService.getUnreadNotificationCount(user.getUserId());
+        
+        // Set attributes for JSP
+        request.setAttribute("totalIncidents", totalIncidents);
+        request.setAttribute("pendingIncidents", pendingIncidents);
+        request.setAttribute("inProgressIncidents", inProgressIncidents);
+        request.setAttribute("resolvedIncidents", resolvedIncidents);
+        request.setAttribute("unreadNotifications", unreadNotifications);
+        
+        // Forward to appropriate dashboard
+        String dashboardPage = "/" + user.getRole().toLowerCase() + "/dashboard.jsp";
+        request.getRequestDispatcher(dashboardPage).forward(request, response);
+    }
+}
