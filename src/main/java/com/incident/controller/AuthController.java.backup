@@ -1,0 +1,134 @@
+package com.incident.controller;
+
+import com.incident.model.User;
+import com.incident.service.AuthService;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+@WebServlet("/auth/*")
+public class AuthController extends HttpServlet {
+    private AuthService authService;
+    
+    @Override
+    public void init() {
+        authService = new AuthService();
+    }
+    
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String action = request.getPathInfo();
+        
+        if (action == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        
+        switch (action) {
+            case "/login":
+                handleLogin(request, response);
+                break;
+            case "/register":
+                handleRegister(request, response);
+                break;
+            case "/logout":
+                handleLogout(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+    
+    private void handleLogin(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        
+        User user = authService.login(username, password);
+        
+        if (user != null) {
+            HttpSession session = request.getSession();
+            session.setAttribute("user", user);
+            session.setAttribute("userId", user.getUserId());
+            session.setAttribute("username", user.getUsername());
+            session.setAttribute("role", user.getRole());
+            session.setAttribute("fullName", user.getFullName());
+            
+            // Redirect based on role
+            switch (user.getRole()) {
+                case "ADMIN":
+                    response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                    break;
+                case "OFFICER":
+                    response.sendRedirect(request.getContextPath() + "/officer/dashboard");
+                    break;
+                case "CITIZEN":
+                    response.sendRedirect(request.getContextPath() + "/citizen/dashboard");
+                    break;
+                default:
+                    response.sendRedirect(request.getContextPath() + "/login.jsp");
+            }
+        } else {
+            request.setAttribute("error", "Invalid username or password");
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
+        }
+    }
+    
+    private void handleRegister(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        User user = new User();
+        user.setUsername(request.getParameter("username"));
+        user.setPassword(request.getParameter("password"));
+        user.setEmail(request.getParameter("email"));
+        user.setFullName(request.getParameter("fullName"));
+        user.setRole("CITIZEN"); // Default role for registration
+        user.setPhone(request.getParameter("phone"));
+        
+        boolean success = authService.register(user);
+        
+        if (success) {
+            request.setAttribute("success", "Registration successful! Please login.");
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
+        } else {
+            request.setAttribute("error", "Registration failed. Username or email already exists.");
+            request.getRequestDispatcher("/register.jsp").forward(request, response);
+        }
+    }
+    
+    private void handleLogout(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        response.sendRedirect(request.getContextPath() + "/login.jsp");
+    }
+    
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String action = request.getPathInfo();
+        
+        if (action == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        
+        switch (action) {
+            case "/logout":
+                handleLogout(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+}
